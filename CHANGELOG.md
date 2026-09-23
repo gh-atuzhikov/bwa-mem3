@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/gh-atuzhikov/bwa-mem3/compare/v0.10.0...v0.10.1) (2026-09-23)
+
+### Bug Fixes
+
+* **bandedSWA:** restore the signed zero floor in the AVX2 and AVX-512 16-bit gap-open kernels.
+* **compat:** disable ungapped-extension shortcuts for `bwa-mem2` compatibility mode while preserving native behavior.
+
 ## [0.10.0](https://github.com/fg-labs/bwa-mem3/compare/v0.9.0...v0.10.0) (2026-08-21)
 
 

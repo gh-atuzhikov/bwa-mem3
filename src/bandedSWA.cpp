@@ -561,13 +561,13 @@ void BandedPairWiseSW::scalarBandedSWAWrapper(SeqPair *seqPairArray,
         m11 = _mm256_andnot_si256(cmp11, m11);                 \
         h11 = _mm256_max_epi16(m11, e11);                               \
         h11 = _mm256_max_epi16(h11, f11);                               \
-        /* max(x - open, 0) == subs_epu16(x, open): scores are non-negative and \
-         * < 32768, so unsigned-saturating sub matches the signed sub + zero  \
-         * floor (brings the u16 core to parity with the u8 core's subs_epu8). */ \
-        __m256i val256 = _mm256_subs_epu16(m11, oe_ins256);            \
+        /* m11 may be negative after a mismatch; use signed subtraction before \
+         * applying the local-alignment zero floor. */                 \
+        __m256i val256 = _mm256_max_epi16(                              \
+            _mm256_sub_epi16(m11, oe_ins256), zero256);                \
         e11 = _mm256_sub_epi16(e11, e_ins256);                          \
         e11 = _mm256_max_epi16(val256, e11);                            \
-        val256 = _mm256_subs_epu16(m11, oe_del256);                    \
+        val256 = _mm256_max_epi16(_mm256_sub_epi16(m11, oe_del256), zero256); \
         f21 = _mm256_sub_epi16(f11, e_del256);                          \
         f21 = _mm256_max_epi16(val256, f21);                            \
     }
@@ -2473,13 +2473,13 @@ void BandedPairWiseSW::smithWaterman256_16(uint16_t seq1SoA[],
         m11 = _mm512_mask_blend_epi16(cmp11, m11, zero512);             \
         h11 = _mm512_max_epi16(m11, e11);                               \
         h11 = _mm512_max_epi16(h11, f11);                               \
-        /* max(x - open, 0) == subs_epu16(x, open): scores are non-negative and \
-         * < 32768, so unsigned-saturating sub matches the signed sub + zero  \
-         * floor (brings the u16 core to parity with the u8 core's subs_epu8). */ \
-        __m512i val512 = _mm512_subs_epu16(m11, oe_ins512);            \
+        /* m11 may be negative after a mismatch; use signed subtraction before \
+         * applying the local-alignment zero floor. */                 \
+        __m512i val512 = _mm512_max_epi16(                              \
+            _mm512_sub_epi16(m11, oe_ins512), zero512);                \
         e11 = _mm512_sub_epi16(e11, e_ins512);                          \
         e11 = _mm512_max_epi16(val512, e11);                            \
-        val512 = _mm512_subs_epu16(m11, oe_del512);                    \
+        val512 = _mm512_max_epi16(_mm512_sub_epi16(m11, oe_del512), zero512); \
         f21 = _mm512_sub_epi16(f11, e_del512);                          \
         f21 = _mm512_max_epi16(val512, f21);                            \
     }

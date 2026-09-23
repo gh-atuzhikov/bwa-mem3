@@ -5014,7 +5014,13 @@ void mem_chain2aln_across_reads_V2(const mem_opt_t *opt, const bntseq_t *bns,
                      * as a mismatch and commit a wrong a->score. Disable it under
                      * --meth so all extension flows through the matrix-aware SW
                      * kernel. (Perf-only fast path; correctness-neutral to skip.) */
-                    if (!opt->meth_mode && sp.len1 >= sp.len2 && sp.len2 <= FP_N_MAX) {
+                    /* --compat promises the target aligner's alignment semantics,
+                     * not just its SAM header/tag shape. BWA-MEM2 has no ungapped
+                     * extension shortcut; letting a HIT bypass banded SW changes
+                     * candidate scores that later become XS:i even when the
+                     * emitted primary alignment is unchanged. */
+                    if (!opt->meth_mode && opt->compat == &COMPAT_TARGET_OFF &&
+                        sp.len1 >= sp.len2 && sp.len2 <= FP_N_MAX) {
                         tprof[UGP_L_ATTEMPT][tid]++;
                         int fp_score, fp_qle, fp_gscore, fp_gtle, fp_band;
                         int fp_st = ungapped_analyze(qs, rs, sp.len2,
@@ -5249,7 +5255,8 @@ void mem_chain2aln_across_reads_V2(const mem_opt_t *opt, const bntseq_t *bns,
                     /* D3 (--meth, PR-4): disable the ungapped fast path under
                      * --meth — see the LEFT-side rationale above (it can't score
                      * the asymmetric OT/OB matrix). */
-                    if (!opt->meth_mode && a->score != -1 && sp.len1 >= sp.len2 && sp.len2 <= FP_N_MAX) {
+                    if (!opt->meth_mode && opt->compat == &COMPAT_TARGET_OFF &&
+                        a->score != -1 && sp.len1 >= sp.len2 && sp.len2 <= FP_N_MAX) {
                         sp.ugp_r_attempted = 1;
                         tprof[UGP_R_ATTEMPT][tid]++;
                         int fp_h0 = a->score;  // the real h0 for right ext
@@ -5689,7 +5696,8 @@ void mem_chain2aln_across_reads_V2(const mem_opt_t *opt, const bntseq_t *bns,
             // would fill a->score / qe / re from symmetric scoring and compact
             // the pair out, bypassing the asymmetric banded SW. The two
             // construction-time passes are gated the same way (see ~3397/3618).
-            if (!opt->meth_mode && !sp->ugp_r_attempted &&
+            if (!opt->meth_mode && opt->compat == &COMPAT_TARGET_OFF &&
+                !sp->ugp_r_attempted &&
                 sp->len1 >= sp->len2 && sp->len2 > 0 && sp->len2 <= FP_N_MAX) {
                 tprof[UGP_R_ATTEMPT][tid]++;
                 const uint8_t *qs = seqBufRightQer + sp->idq;
